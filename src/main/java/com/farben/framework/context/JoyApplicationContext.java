@@ -1,5 +1,8 @@
 package com.farben.framework.context;
 
+import com.farben.framework.annotation.JoyController;
+import com.farben.framework.annotation.JoyService;
+
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
@@ -63,12 +66,29 @@ public class JoyApplicationContext {
             for (String className:classCache ) {
                 Class<?> clazz = Class.forName(className);
                 //加了注解的才初始化
+                if (clazz.isAnnotationPresent(JoyController.class)) {
+                    //默认首字母类名小写
+                    String id = lowerFirstChar(clazz.getSimpleName());
+                    instanceMapping.put(id, clazz.getInterfaces());
+                } else if (clazz.isAnnotationPresent(JoyService.class)){
+
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * 首字母小写
+     * @param str
+     * @return
+     */
+    private String lowerFirstChar(String str){
+        char[] chars = str.toCharArray();
+        chars[0] +=32;
+        return String.valueOf(chars);
+    }
     public Object getBean(String name) {
         return null;
     }
