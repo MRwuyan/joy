@@ -60,8 +60,12 @@ public class JoyApplicationContext {
             return ;
         }
         try {
-
+            for (String className:classCache ) {
+                Class<?> clazz = Class.forName(className);
+                //加了注解的才初始化
+            }
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

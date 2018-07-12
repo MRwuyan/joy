@@ -19,7 +19,6 @@ public class JoyDispatchServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         this.doPost(req, resp);
     }
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         System.out.println("do post");
@@ -43,7 +42,6 @@ public class JoyDispatchServlet extends HttpServlet {
         handlerAdapter.handler(req,res,handler);
     }
     private HandlerAdapter getHandlerAdapter(Handler adapter){
-
         return null;
     }
     private Handler getHandler(HttpServletRequest request) {
@@ -56,83 +54,57 @@ public class JoyDispatchServlet extends HttpServlet {
      */
     @Override
     public void init(ServletConfig config) throws ServletException {
-
         //ioc容器必先初始化
         //假装容器已启动
         JoyApplicationContext context = new JoyApplicationContext(config.getInitParameter(LOCATION));
     }
-
     /**
      * 请求解析
      * @param context
      */
-    private void initMultipartResolver(JoyApplicationContext context){
-
-    }
-
+    private void initMultipartResolver(JoyApplicationContext context){ }
     /**
      * 多语言，国际化
      * @param context
      */
-    private void initLocationResolver(JoyApplicationContext context) {
-
-    }
-
+    private void initLocationResolver(JoyApplicationContext context) {  }
     /**
      * 主题view
      * @param context
      */
-    private void initThemeResolver(JoyApplicationContext context){
-
-    }
-
+    private void initThemeResolver(JoyApplicationContext context){ }
     /**
      * 解析url和method关联
      * @param context
      */
-    private void initHandlerMappings(JoyApplicationContext context){
-
-    }
-
+    private void initHandlerMappings(JoyApplicationContext context){  }
     /**
      * 适配器
      * @param context
      */
     private void initHandlerAdapters(JoyApplicationContext context) {
-
     }
-
     /**
      * 异常解析
      * @param context
      */
     private void initHandlerExceptionResolvers(JoyApplicationContext context){
-
     }
-
     /**
      * 视图转发
      * @param context
      */
     private void initViewNameTranslator(JoyApplicationContext context) {
-
     }
-
     /**
      * 解析模板内容（拿到服务器传输内容，生成HTML代码）
      * @param context
      */
     private void initViewResolvers(JoyApplicationContext context) {
-
     }
     private void initFlashMapManager(JoyApplicationContext context ){
-
     }
-
-    private class Handler {
-
-    }
-
+    private class Handler {}
     /**
      * 方法适配器
      */
