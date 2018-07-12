@@ -71,7 +71,6 @@ public class JoyApplicationContext {
                     String id = lowerFirstChar(clazz.getSimpleName());
                     instanceMapping.put(id, clazz.getInterfaces());
                 } else if (clazz.isAnnotationPresent(JoyService.class)){
-
                 }
             }
         } catch (Exception e) {
