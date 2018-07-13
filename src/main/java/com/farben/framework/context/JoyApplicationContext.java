@@ -55,6 +55,10 @@ public class JoyApplicationContext {
         }
 
     }
+
+    /**
+     * 依赖注入
+     */
     private void populate() {
         //首先判断ioc容器中是否有类
         if (instanceMapping.isEmpty()) {
@@ -139,7 +143,7 @@ public class JoyApplicationContext {
         return null;
     }
 
-    public Map<String, Object> getAll(String name) {
+    public Map<String, Object> getAll() {
         return instanceMapping;
     }
 
