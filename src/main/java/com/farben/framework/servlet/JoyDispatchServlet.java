@@ -2,6 +2,7 @@ package com.farben.framework.servlet;
 
 import com.farben.framework.annotation.JoyController;
 import com.farben.framework.annotation.JoyRequestMapping;
+import com.farben.framework.annotation.JoyRequestParam;
 import com.farben.framework.context.JoyApplicationContext;
 
 import javax.servlet.ServletConfig;
@@ -10,12 +11,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
 public class JoyDispatchServlet extends HttpServlet {
     private static final String LOCATION = "contextConfigLocation";
     private Map<String, Handler> handlerMapping = new HashMap<String, Handler>();
+    private Map<Handler, HandlerAdapter> adapterMapping = new HashMap<Handler, HandlerAdapter>();
 
     //    private List<Handler> handlers = new ArrayList<Handler>();
     @Override
@@ -36,6 +40,7 @@ public class JoyDispatchServlet extends HttpServlet {
     }
 
     private void doDispatch(HttpServletRequest req, HttpServletResponse res) throws Exception {
+
         //从handlermappring中取
         Handler handler = getHandler(req);
         if (handler == null) {
@@ -43,13 +48,16 @@ public class JoyDispatchServlet extends HttpServlet {
             return;
         }
         //在取出来一个适配器
-        HandlerAdapter handlerAdapter = getHandlerAdapter(handler);
+        HandlerAdapter ha = getHandlerAdapter(handler);
         //再由适配器去调用具体方法
-        handlerAdapter.handler(req, res, handler);
+        ha.handler(req, res, handler);
     }
 
-    private HandlerAdapter getHandlerAdapter(Handler adapter) {
-        return null;
+    private HandlerAdapter getHandlerAdapter(Handler handler) {
+        if (adapterMapping.isEmpty()) {
+            return null;
+        }
+        return adapterMapping.get(handler);
     }
 
     private Handler getHandler(HttpServletRequest request) {
@@ -61,10 +69,7 @@ public class JoyDispatchServlet extends HttpServlet {
         String contextPath = request.getContextPath();
         url.replace(contextPath, "").replaceAll("/+", "/");
 
-//        for (Map.Entry<String,Handler> entry: handlerMapping.entrySet()) {
-//
-//        }
-        return null;
+        return handlerMapping.get(url);
     }
 
     /**
@@ -171,6 +176,8 @@ public class JoyDispatchServlet extends HttpServlet {
         if (handlerMapping.isEmpty()) {
             return;
         }
+        //参数类型作为key,参数索引作为值
+        Map<String, Integer> paramMapping = new HashMap<String, Integer>();
         //只要取出来具体的某个方法
         for (Map.Entry<String, Handler> entry :
                 handlerMapping.entrySet()) {
@@ -178,9 +185,25 @@ public class JoyDispatchServlet extends HttpServlet {
             Class<?>[] parameterTypes = entry.getValue().method.getParameterTypes();
             //有顺序
             for (int i= 0;i<parameterTypes.length;i++) {
+                Class<?> type = parameterTypes[i];
+                if (type == HttpServletRequest.class||
+                        type == HttpServletResponse.class) {
+                    paramMapping.put(type.getName(), i);
+                }
+            }
+            //这里是匹配request和response
+            Annotation[][] pa = entry.getValue().method.getParameterAnnotations();
+            for (int i = 0; i<pa.length  ;i++) {
+                for (Annotation a :
+                        pa[i]) {
+                    if (a instanceof JoyRequestParam) {
+                        String paramName = ((JoyRequestParam) a).value();
+                        paramMapping.put(paramName, i);
+                    }
+                }
 
             }
-
+            adapterMapping.put(entry.getValue(), new HandlerAdapter(paramMapping));
         }
     }
 
@@ -226,8 +249,56 @@ public class JoyDispatchServlet extends HttpServlet {
      * 方法适配器
      */
     private class HandlerAdapter {
-        public void handler(HttpServletRequest req, HttpServletResponse res, Handler handler) {
+        private Map<String, Integer> paramMapping ;
+        public HandlerAdapter(Map<String, Integer> paramMapping) {
+            this.paramMapping = paramMapping;
+        }
 
+        /**
+         * 主要目的用反射调用url对应的method
+         * @param req
+         * @param res
+         * @param handler
+         */
+        public void handler(HttpServletRequest req, HttpServletResponse res, Handler handler) throws InvocationTargetException, IllegalAccessException {
+
+            //为什么要传req,res,handler
+            Class<?>[] paramTypes = handler.method.getParameterTypes();
+            //要想给参数赋值,只能通过索引号来找到具体的参数
+            Object[] paramValues = new Object[paramTypes.length];
+            Map<String, String[]> params = req.getParameterMap();
+            for (Map.Entry<String, String[]> param:params.entrySet()){
+                String value = Arrays.toString(param.getValue()).replaceAll("\\[|\\]", "").replaceAll(",\\s", ",");
+                if (!this.paramMapping.containsKey(param.getKey())) {
+                    continue;
+                }
+                Integer index = this.paramMapping.get(param.getKey());
+                castStringValue(value, paramTypes[index]);
+            }
+            //request和response要赋值
+            String reqName = HttpServletRequest.class.getName();
+            if (this.paramMapping.containsKey(reqName)) {
+                Integer reqIndex = this.paramMapping.get(reqName);
+                paramValues[reqIndex] = req;
+            }
+            String respName = HttpServletResponse.class.getName();
+            if (this.paramMapping.containsKey(respName)) {
+                Integer reqIndex = this.paramMapping.get(respName);
+                paramValues[reqIndex] = req;
+            }
+            handler.method.invoke(handler.controller, paramValues);
+        }
+    }
+
+    private Object castStringValue(String value, Class<?> clazz) {
+        if (clazz == String.class) {
+            return clazz;
+        } else if (clazz == Integer.class) {
+            return Integer.valueOf(value);
+        } else if (clazz == int.class) {
+            return Integer.valueOf(value).intValue();
+        } else {
+            return null;
         }
     }
 }
